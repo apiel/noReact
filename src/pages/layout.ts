@@ -1,8 +1,8 @@
-import { html } from '../utils';
+import { escapeStr, html, js } from '../utils';
 
 export function layout(content: string, csr: boolean) {
     return csr
-        ? content
+        ? js`document.getElementById('content').innerHTML = ${escapeStr(content)}`
         : html`
               <!DOCTYPE html>
               <html lang="en">
@@ -16,26 +16,26 @@ export function layout(content: string, csr: boolean) {
                       <div id="content">${content}</div>
                       <script>
                           // here we could also use webpack or parcel to load a ts script!!
+                          // see:
+                          // https://github.com/reactivestack/parcel-react-ssr
+                          // https://github.com/brillout/parcel-ssr
+                          async function getLink(url) {
+                            const res = await fetch(\`\${url}?csr=1\`);
+                            eval(await res.text());
+                            linker();
+                          }
                           function linker() {
                               [...document.getElementsByTagName('a')].forEach(
                                   (el) =>
-                                      (el.onclick = async (ev) => {
+                                      (el.onclick = (ev) => {
                                           ev.preventDefault();
                                           window.history.pushState({}, '', el.href);
-                                          const res = await fetch(\`\${el.href}?csr=1\`);
-                                          document.getElementById('content').innerHTML =
-                                              await res.text();
-                                          linker();
+                                          getLink(el.href);
                                       }),
                               );
                           }
                           linker();
-
-                          window.onpopstate = async (event) => {
-                              const res = await fetch(\`\${document.location}?csr=1\`);
-                              document.getElementById('content').innerHTML = await res.text();
-                              linker();
-                          };
+                          window.onpopstate = () => getLink(document.location);
                       </script>
                   </body>
               </html>

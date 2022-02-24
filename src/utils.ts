@@ -6,3 +6,6 @@ export const html = (strings: TemplateStringsArray, ...values: any[]) => {
     return strings.flatMap((str, i) => [str, values[i] ?? '']).join('');
 };
 
+export const js = html;
+
+export const escapeStr = (value: string) => '`' + value.replace(/(["'`])/g, "\\$1") + '`';
